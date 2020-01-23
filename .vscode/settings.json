@@ -1,4 +1,4 @@
 {
-    "python.pythonPath": "/home/fhanna/work/EBEL-DLX/ebel-dlx-api/.env/bin/python",
+    "python.pythonPath": ".env/bin/python",
     "debug.node.autoAttach": "on"
 }

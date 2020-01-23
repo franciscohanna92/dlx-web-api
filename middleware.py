@@ -1,22 +1,28 @@
-from werkzeug.wrappers import Request, Response
+from functools import wraps
+from flask import request, Response
+# from werkzeug.wrappers import Request, Response
 from dlx import DlxProcessPool
 
 dlxProcessPool = DlxProcessPool()
 
-class DlxProcessMiddleware(object):
-  def __init__(self, app):
-    self.app = app
-    
-  def __call__(self, environ, start_response):
-    request = Request(environ, shallow=True)
-
-    if(request.path != '/dlx/connect' and request.method != 'OPTIONS'):
+def checkDlxProcessIdHeader(f):
+    @wraps(f)
+    def wrapper(*args, **kwargs):
       dlxProcessId = request.headers.get('DLX-Process-Id')
 
       if(dlxProcessId is None):
         res = Response('Missing DLX-Process-Id header', mimetype= 'text/plain', status=400)
-        return res(environ, start_response)
+        return res
 
-      environ['dlxProcess'] = dlxProcessPool.get(dlxProcessId)
+      dlxProcess = dlxProcessPool.get(dlxProcessId)
+      
+      if(dlxProcess is None):
+        res = Response('The DLX process does not exists', mimetype= 'text/plain', status=400)
+        return res
 
-    return self.app(environ, start_response)
+      request.environ['dlxProcess'] = dlxProcess
+
+      return f(*args, **kwargs)
+    
+    wrapper.__name__ = f.__name__
+    return wrapper
